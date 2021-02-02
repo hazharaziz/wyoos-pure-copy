@@ -1,6 +1,7 @@
 #include <common/types.h>
 #include <gdt.h>
 #include <hardwareCommunication/interrupts.h>
+#include <hardwareCommunication/pci.h>
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 #include <drivers/driver.h>
@@ -143,6 +144,10 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t magicnumber
     driverManager.AddDriver(&keyboard);
     MouseDriver mouse(&interrupts, &mouseHandler); 
     driverManager.AddDriver(&mouse);
+
+    PCIController pciController;
+    pciController.SelectDrivers(&driverManager, &interrupts);
+
     printf("Activating all drivers!, Stage 2\n");
 
     driverManager.ActivateAll(); 

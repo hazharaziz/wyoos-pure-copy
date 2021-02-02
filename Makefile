@@ -8,6 +8,7 @@ objects = obj/loader.o \
 		  obj/hardwareCommunication/port.o \
 		  obj/hardwareCommunication/interruptstubs.o \
 		  obj/hardwareCommunication/interrupts.o \
+		  obj/hardwareCommunication/pci.o \
 		  obj/drivers/keyboard.o \
 		  obj/drivers/mouse.o  \
 		  obj/kernel.o 
