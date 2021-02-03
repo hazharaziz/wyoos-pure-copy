@@ -1,5 +1,6 @@
 #include <common/types.h>
 #include <gdt.h>
+#include <multitasking.h>
 #include <hardwareCommunication/interrupts.h>
 #include <hardwareCommunication/pci.h>
 #include <drivers/keyboard.h>
@@ -9,6 +10,8 @@
 #include <gui/desktop.h>
 #include <gui/widget.h>
 #include <gui/window.h>
+
+// #define GRAPHICSMODE
 
 using namespace myos;
 using namespace myos::common;
@@ -120,6 +123,17 @@ class MouseToConsole : public MouseEventHandler
         }
 };
 
+void taskA()
+{
+    while(true)
+        printf("A");
+}
+void taskB()
+{
+    while(true)
+        printf("B");
+}
+
 typedef void (*constructor)();
 
 extern "C" constructor start_ctors;
@@ -132,28 +146,42 @@ extern "C" void callConstructors()
     }
 }
 
-extern "C" void kernelMain(const void* multiboot_structure, uint32_t magicnumber) 
+extern "C" void kernelMain(const void* multiboot_structure, uint32_t /*magicnumber*/) 
 {
     printf("This is my operating system!\n");
 
     GlobalDescriptorTable gdt;
-    InterruptManager interrupts(0x20, &gdt);
 
+    TaskManager taskManager;
+    Task task1(&gdt, taskA);
+    Task task2(&gdt, taskB);
+    taskManager.AddTask(&task1);
+    taskManager.AddTask(&task2);
+    
+    InterruptManager interrupts(0x20, &gdt, &taskManager);
+    
     printf("Initializing drivers, Stage 1\n");
 
-    Desktop desktop(320, 200, 0x00, 0x00, 0xA8);
-
+    #ifdef GRAPHICSMODE
+        Desktop desktop(320, 200, 0x00, 0x00, 0xA8);
+    #endif
 
     DriverManager driverManager;
 
-    // PrintfKeyboardEventHandler keyboardHandler;
-    // KeyboardDriver keyboard(&interrupts, &keyboardHandler);
-    KeyboardDriver keyboard(&interrupts, &desktop);
+    #ifdef GRAPHICSMODE
+        KeyboardDriver keyboard(&interrupts, &desktop);
+    #else
+        PrintfKeyboardEventHandler keyboardHandler;
+        KeyboardDriver keyboard(&interrupts, &keyboardHandler);
+    #endif
     driverManager.AddDriver(&keyboard);
 
-    // MouseToConsole mouseHandler;
-    // MouseDriver mouse(&interrupts, &mouseHandler); 
-    MouseDriver mouse(&interrupts, &desktop); 
+    #ifdef GRAPHICSMODE
+        MouseDriver mouse(&interrupts, &desktop); 
+    #else 
+        MouseToConsole mouseHandler;
+        MouseDriver mouse(&interrupts, &mouseHandler); 
+    #endif
     driverManager.AddDriver(&mouse);
 
     PCIController pciController;
@@ -169,18 +197,22 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t magicnumber
 
     printf("Activating the interrupts!, Stage 3\n");
 
-    vga.SetMode(320, 200, 8);
+    #ifdef GRAPHICSMODE
+        vga.SetMode(320, 200, 8);
+        Window window1(&desktop, 10, 10, 20, 20, 0xA8, 0x00, 0x00);
+        desktop.AddChild(&window1);
+        Window window2(&desktop, 40, 15, 30, 30, 0x00, 0xA8, 0x00);
+        desktop.AddChild(&window2);
+    #endif
 
-    Window window1(&desktop, 10, 10, 20, 20, 0xA8, 0x00, 0x00);
-    desktop.AddChild(&window1);
-    Window window2(&desktop, 40, 15, 30, 30, 0x00, 0xA8, 0x00);
-    desktop.AddChild(&window2);
 
     interrupts.Activate(); 
 
 
     while(1)
     {
-        desktop.Draw(&vga);
+        #ifdef GRAPHICSMODE
+            desktop.Draw(&vga);
+        #endif
     }
 }   
