@@ -6,11 +6,15 @@
 #include <drivers/mouse.h>
 #include <drivers/driver.h>
 #include <drivers/vga.h>
+#include <gui/desktop.h>
+#include <gui/widget.h>
+#include <gui/window.h>
 
 using namespace myos;
 using namespace myos::common;
 using namespace myos::drivers;
 using namespace myos::hardwareCommunication;
+using namespace myos::gui;
 
 void printf(char* str) 
 {
@@ -137,13 +141,19 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t magicnumber
 
     printf("Initializing drivers, Stage 1\n");
 
-    DriverManager driverManager;
-    PrintfKeyboardEventHandler keyboardHandler;
-    MouseToConsole mouseHandler;
+    Desktop desktop(320, 200, 0x00, 0x00, 0xA8);
 
-    KeyboardDriver keyboard(&interrupts, &keyboardHandler);
+
+    DriverManager driverManager;
+
+    // PrintfKeyboardEventHandler keyboardHandler;
+    // KeyboardDriver keyboard(&interrupts, &keyboardHandler);
+    KeyboardDriver keyboard(&interrupts, &desktop);
     driverManager.AddDriver(&keyboard);
-    MouseDriver mouse(&interrupts, &mouseHandler); 
+
+    // MouseToConsole mouseHandler;
+    // MouseDriver mouse(&interrupts, &mouseHandler); 
+    MouseDriver mouse(&interrupts, &desktop); 
     driverManager.AddDriver(&mouse);
 
     PCIController pciController;
@@ -158,11 +168,19 @@ extern "C" void kernelMain(const void* multiboot_structure, uint32_t magicnumber
     driverManager.ActivateAll(); 
 
     printf("Activating the interrupts!, Stage 3\n");
-    interrupts.Activate(); 
 
     vga.SetMode(320, 200, 8);
-    vga.FillRectangle(0, 0, 320, 200, 0x00, 0x00, 0xA8);
+
+    Window window1(&desktop, 10, 10, 20, 20, 0xA8, 0x00, 0x00);
+    desktop.AddChild(&window1);
+    Window window2(&desktop, 40, 15, 30, 30, 0x00, 0xA8, 0x00);
+    desktop.AddChild(&window2);
+
+    interrupts.Activate(); 
 
 
-    while(1);
+    while(1)
+    {
+        desktop.Draw(&vga);
+    }
 }   

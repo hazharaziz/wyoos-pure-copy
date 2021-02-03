@@ -3,12 +3,13 @@
 
 #include <common/types.h>
 #include <common/graphicsContext.h>
+#include <drivers/keyboard.h>
 
 namespace myos 
 {
     namespace gui
     {
-        class Widget
+        class Widget : public myos::drivers::KeyboardEventHandler
         {
             protected:
                 Widget* parent;
@@ -38,17 +39,13 @@ namespace myos
 
                 virtual void GetFocus(Widget* widget);
                 virtual void ModelToScreen(myos::common::int32_t &x, myos::common::int32_t &y);
+                virtual bool ContainsCoordinate(myos::common::int32_t x, myos::common::int32_t y);
 
                 virtual void Draw(myos::common::GraphicsContext* gc);
-                virtual void OnMouseDown(myos::common::int32_t x, myos::common::int32_t y);                
-                virtual void OnMouseUp(myos::common::int32_t x, myos::common::int32_t y);                
+                virtual void OnMouseDown(myos::common::int32_t x, myos::common::int32_t y, myos::common::uint8_t button);                
+                virtual void OnMouseUp(myos::common::int32_t x, myos::common::int32_t y, myos::common::uint8_t button);                
                 virtual void OnMouseMove(myos::common::int32_t oldX, myos::common::int32_t oldY, myos::common::int32_t newX, myos::common::int32_t newY);                 
 
- 
-                virtual void OnKeyDown(char* str);
-                virtual void OnKeyUp(char* str);
-
-                virtual bool ContainsCoordinate(myos::common::int32_t x, myos::common::int32_t y);
 
         };
 
@@ -73,15 +70,16 @@ namespace myos
 
 
                 virtual void GetFocus(Widget* widget);
+                virtual bool AddChild(Widget* child);
 
                 virtual void Draw(myos::common::GraphicsContext* gc);
-                virtual void OnMouseDown(myos::common::int32_t x, myos::common::int32_t y);                
-                virtual void OnMouseUp(myos::common::int32_t x, myos::common::int32_t y);                
+                virtual void OnMouseDown(myos::common::int32_t x, myos::common::int32_t y, myos::common::uint8_t button);                
+                virtual void OnMouseUp(myos::common::int32_t x, myos::common::int32_t y, myos::common::uint8_t button);                
                 virtual void OnMouseMove(myos::common::int32_t oldX, myos::common::int32_t oldY, myos::common::int32_t newX, myos::common::int32_t newY);
 
  
-                virtual void OnKeyDown(char* str);
-                virtual void OnKeyUp(char* str);
+                virtual void OnKeyDown(char);
+                virtual void OnKeyUp(char);
 
         };
     }

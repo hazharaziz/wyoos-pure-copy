@@ -84,7 +84,7 @@ uint32_t MouseDriver::HandleInterrupt(uint32_t esp)
     {
         if (buffer[1] != 0 || buffer[2] != 0)
         {
-            handler->OnMouseMove(buffer[1], buffer[2]);
+            handler->OnMouseMove((int8_t)buffer[1], -((int8_t)buffer[2]));
         }
 
 
@@ -101,10 +101,6 @@ uint32_t MouseDriver::HandleInterrupt(uint32_t esp)
                 {
                     handler->OnMouseDown(i + 1);
                 }
-                
-                // VideoMemory[80 * y + x] = ((VideoMemory[80 * y + x] & 0xF000) >> 4)
-                //                         | ((VideoMemory[80 * y + x] & 0x0F00) << 4)
-                //                         | ((VideoMemory[80 * y + x] & 0x00FF)); 
             }
         }
         buttons = buffer[0];

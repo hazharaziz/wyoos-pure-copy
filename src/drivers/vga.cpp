@@ -9,7 +9,7 @@ using namespace myos::drivers;
 
 VGA::VGA()
   : miscPort(0x03c2),
-    crtcIndexPort(0x3df),
+    crtcIndexPort(0x3d4),
     crtcDataPort(0x3d5),
     sequencerIndexPort(0x3c4),
     sequencerDataPort(0x3c5),
@@ -113,44 +113,47 @@ bool VGA::SetMode(uint32_t width, uint32_t height, uint32_t colorDepth)
 uint8_t* VGA::GetFrameBufferSegment()
 {
     graphicsControllerIndexPort.Write(0x06);
-    uint8_t segmentNumber = graphicsControllerDataPort.Read() & (3<<2);
+    uint8_t segmentNumber = ((graphicsControllerDataPort.Read()) >> 2)  & 0x03;
     switch(segmentNumber)
     {
         default:
-        case 0<<2: return (uint8_t*)0x00000;
-        case 1<<2: return (uint8_t*)0xA0000;
-        case 2<<2: return (uint8_t*)0xB0000;
-        case 3<<2: return (uint8_t*)0xB8000;
+        case 0: return (uint8_t*)0x00000;
+        case 1: return (uint8_t*)0xA0000;
+        case 2: return (uint8_t*)0xB0000;
+        case 3: return (uint8_t*)0xB8000;
     }
 }
 
-void VGA::PutPixel(uint32_t x, uint32_t y,  uint8_t colorIndex)
+void VGA::PutPixel(int32_t x, int32_t y,  uint8_t colorIndex)
 {
+    if (x < 0 || 320 <= x || y < 0 || 200 <= y) return;
     uint8_t* pixelAddress = GetFrameBufferSegment() + 320 * y + x;
     *pixelAddress = colorIndex;
 }
 
 uint8_t VGA::GetColorIndex(uint8_t r, uint8_t g, uint8_t b)
 {
-    if(r == 0x00, g == 0x00, b == 0xA8)
-        return 0x01;
+    if(r == 0x00 && g == 0x00 && b == 0x00) return 0x00; // black
+    if(r == 0x00 && g == 0x00 && b == 0xA8) return 0x01; // blue
+    if(r == 0x00 && g == 0xA8 && b == 0x00) return 0x02; // green
+    if(r == 0xA8 && g == 0x00 && b == 0x00) return 0x04; // red
+    if(r == 0xFF && g == 0xFF && b == 0xFF) return 0x3F; // white
     return 0x00;
 }
            
-void VGA::PutPixel(uint32_t x, uint32_t y,  uint8_t r, uint8_t g, uint8_t b)
+void VGA::PutPixel(int32_t x, int32_t y,  uint8_t r, uint8_t g, uint8_t b)
 {
     PutPixel(x,y, GetColorIndex(r,g,b));
 }
 
-void VGA::FillRectangle(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t r, uint8_t g, uint8_t b)
+void VGA::FillRectangle(int32_t x, int32_t y, uint32_t w, uint32_t h, uint8_t r, uint8_t g, uint8_t b)
 {
-    for (int32_t Y = y; Y < y + h; Y++)
+    for(int32_t Y = y; Y < y+h; Y++)
     {
-        for (int32_t X = 0; X < x + w; X++)
+        for(int32_t X = x; X < x+w; X++)
         {
             PutPixel(X, Y, r, g, b);
         }
     }
-
 }
 
